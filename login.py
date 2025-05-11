@@ -24,7 +24,6 @@ def opened(login = None): # функция открытия окна, имеет
 def log(): # функция логина
     login = windows.wins[1][0].Login.text() # записываем введенный логин в переменную для удобства
     password = windows.wins[1][0].Password.text() # записываем введеный пароль в переменную для удобства
-
     connection = sqlite3.connect('kirieshki.db') # подключаем БД
     cursor = connection.cursor() # создаем "курсор" для запросов
     cursor.execute('SELECT Login, Password FROM users') # создаем запрос получение логинов и паролей из БД
@@ -37,9 +36,9 @@ def log(): # функция логина
         if users[login] == password: # если введенный пароль подходит - входим
             windows.wins[1][0].NoPassword.hide() # скрываем уведомление о неверном пароле
             windows.wins[1][0].hide() # скрываем текущее окно
-
-            run_game(login)
-            windows.app.quit()
+            windows.wins[2][0].show()
+            windows.wins[2][1](login)
+            
 
         else:
             windows.wins[1][0].NoPassword.show() # если пароль не подошел уведомляем об этом

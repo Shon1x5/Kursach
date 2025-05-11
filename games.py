@@ -5,11 +5,36 @@ from pygame import mixer
 from piano_keyboard import PianoKeyboard
 import random
 
+
+# Словарь соответствия клавиш клавиатуры нотам пианино
+KEY_BINDINGS = {
+    # Белые клавиши (основные)
+    pg.K_1: 'C2', pg.K_2: 'D2', pg.K_3: 'E2', pg.K_4: 'F2', pg.K_5: 'G2', pg.K_6: 'A2', pg.K_7: 'B2',
+    pg.K_q: 'C3', pg.K_w: 'D3', pg.K_e: 'E3', pg.K_r: 'F3', pg.K_t: 'G3', pg.K_y: 'A3', pg.K_u: 'B3',
+    pg.K_a: 'C4', pg.K_s: 'D4', pg.K_d: 'E4', pg.K_f: 'F4', pg.K_g: 'G4', pg.K_h: 'A4', pg.K_j: 'B4',
+    pg.K_z: 'C5', pg.K_x: 'D5', pg.K_c: 'E5', pg.K_v: 'F5', pg.K_b: 'G5', pg.K_n: 'A5', pg.K_m: 'B5',
+    pg.K_9: 'C6', pg.K_0: 'D6', pg.K_i: 'E6', pg.K_o: 'F6', pg.K_p: 'G6', pg.K_k: 'A6', pg.K_l: 'B6',
+    
+    # Черные клавиши (Shift + основная)
+    (pg.K_LSHIFT, pg.K_1): 'C#2', (pg.K_LSHIFT, pg.K_2): 'D#2',
+    (pg.K_LSHIFT, pg.K_4): 'F#2', (pg.K_LSHIFT, pg.K_5): 'G#2', (pg.K_LSHIFT, pg.K_6): 'A#2',
+    (pg.K_LSHIFT, pg.K_q): 'C#3', (pg.K_LSHIFT, pg.K_w): 'D#3',
+    (pg.K_LSHIFT, pg.K_r): 'F#3', (pg.K_LSHIFT, pg.K_t): 'G#3', (pg.K_LSHIFT, pg.K_y): 'A#3',
+    (pg.K_LSHIFT, pg.K_a): 'C#4', (pg.K_LSHIFT, pg.K_s): 'D#4',
+    (pg.K_LSHIFT, pg.K_f): 'F#4', (pg.K_LSHIFT, pg.K_g): 'G#4', (pg.K_LSHIFT, pg.K_h): 'A#4',
+    (pg.K_LSHIFT, pg.K_z): 'C#5', (pg.K_LSHIFT, pg.K_x): 'D#5',
+    (pg.K_LSHIFT, pg.K_v): 'F#5', (pg.K_LSHIFT, pg.K_b): 'G#5', (pg.K_LSHIFT, pg.K_n): 'A#5',
+    (pg.K_LSHIFT, pg.K_9): 'C#6', (pg.K_LSHIFT, pg.K_0): 'D#6',
+    (pg.K_LSHIFT, pg.K_i): 'F#6', (pg.K_LSHIFT, pg.K_o): 'G#6', (pg.K_LSHIFT, pg.K_p): 'A#6'
+}
+
+
 class PianoSound:
     def __init__(self):
         mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
         self.sounds = {}
         self._load_piano_samples()  # Загрузка сэмплов пианино
+    
     
     def _generate_piano_wave(self, freq, duration=1.0, sample_rate=44100):
         """Генерация более реалистичного звука пианино"""
@@ -32,6 +57,7 @@ class PianoSound:
         
         return np.int16(wave * 32767 * 0.3)
     
+    
     def _load_piano_samples(self):
         """Создаем сэмплы для всех нот пианино"""
         octaves = [2, 3, 4, 5, 6]  # Октавы от большой до третьей
@@ -50,7 +76,7 @@ class PianoSound:
                 wave = self._generate_piano_wave(freq)
                 self.sounds[note_name] = mixer.Sound(buffer=wave)
     
-    def play_note(self, note, volume=0.5):
+    def play_note(self, note, volume=0.15):
         """Воспроизведение ноты с регулировкой громкости"""
         if note in self.sounds:
             sound = self.sounds[note]
@@ -106,7 +132,6 @@ def run_game(login):
     run = True
     while run:
         screen.blit(bg, (0, 0))
-
         for e in pg.event.get():
             if e.type == pg.QUIT:
                 run = False
@@ -123,7 +148,19 @@ def run_game(login):
                 if key:
                     keyboard.press_key(key['id'])
                     # Воспроизводим звук с небольшим случайным variation
-                    piano_sound.play_note(key['note'], volume=0.2 + random.uniform(0, 0.2))
+                    octave = key['note'][-1]  # Получаем последний символ (номер октавы)
+                    
+                    if octave == '2':
+                        piano_sound.play_note(key['note'], volume=0.7 + random.uniform(0, 0.2))
+                    elif octave == '3':
+                        piano_sound.play_note(key['note'], volume=0.555 + random.uniform(0, 0.2))
+                    elif octave == '4':
+                        piano_sound.play_note(key['note'], volume=0.445 + random.uniform(0, 0.2))
+                    elif octave == '5':
+                        piano_sound.play_note(key['note'], volume=0.3345 + random.uniform(0, 0.2))
+                    elif octave == '6':
+                        piano_sound.play_note(key['note'], volume=0.22345 + random.uniform(0, 0.2))
+                    
                     key_presses += 1
                     
                     # Создаем эффект нажатия
@@ -138,6 +175,37 @@ def run_game(login):
                         keyboard.release_key(key['id'])
             elif e.type == pg.KEYDOWN:
                 key_presses += 1
+                if e.key == pg.K_ESCAPE:
+                    run = False
+                
+                # Получаем текущее состояние модификаторов
+                modifiers = pg.key.get_mods()
+                shift_pressed = modifiers & pg.KMOD_LSHIFT or modifiers & pg.KMOD_RSHIFT
+                
+                # Проверяем комбинации с Shift в первую очередь
+                if shift_pressed:
+                    for (shift_key, key_code), note in [(k, v) for k, v in KEY_BINDINGS.items() if isinstance(k, tuple)]:
+                        if e.key == key_code:
+                            keyboard.press_key_by_note(note)
+                            piano_sound.play_note(note)
+                            break
+                    else:  # Если не нашли комбинацию с Shift, проверяем обычные клавиши
+                        if e.key in KEY_BINDINGS:
+                            note = KEY_BINDINGS[e.key]
+                            keyboard.press_key_by_note(note)
+                            piano_sound.play_note(note)
+                else:
+                    # Проверяем обычные клавиши
+                    if e.key in KEY_BINDINGS:
+                        note = KEY_BINDINGS[e.key]
+                        keyboard.press_key_by_note(note)
+                        piano_sound.play_note(note)
+
+            elif e.type == pg.KEYUP:
+                # Отпускаем все клавиши при отпускании любой клавиши
+                for key in keyboard.keys:
+                    if key['is_pressed']:
+                        keyboard.release_key(key['id'])
 
         # Отрисовка интерфейса
         time_str = "Время: {:02}:{:02}:{:02}".format(hours, minutes, seconds)
