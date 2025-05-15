@@ -4,7 +4,13 @@ import numpy as np
 from pygame import mixer
 from piano_keyboard import PianoKeyboard
 import random
+import os
 
+# Добавлены константы путей в начале файла
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'kirieshki.db')
+IMAGE_PATH = os.path.join(BASE_DIR, '1.png')
+FONT_PATH = os.path.join(BASE_DIR, 'Comic Sans MS.ttf')
 
 # Словарь соответствия клавиш клавиатуры нотам пианино
 KEY_BINDINGS = {
@@ -28,13 +34,11 @@ KEY_BINDINGS = {
     (pg.K_LSHIFT, pg.K_i): 'F#6', (pg.K_LSHIFT, pg.K_o): 'G#6', (pg.K_LSHIFT, pg.K_p): 'A#6'
 }
 
-
 class PianoSound:
     def __init__(self):
         mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
         self.sounds = {}
-        self._load_piano_samples()  # Загрузка сэмплов пианино
-    
+        self._load_piano_samples()
     
     def _generate_piano_wave(self, freq, duration=1.0, sample_rate=44100):
         """Генерация более реалистичного звука пианино"""
@@ -56,7 +60,6 @@ class PianoSound:
         wave += noise
         
         return np.int16(wave * 32767 * 0.3)
-    
     
     def _load_piano_samples(self):
         """Создаем сэмплы для всех нот пианино"""
@@ -87,13 +90,31 @@ def run_game(login):
     pg.init()
     pg.mixer.init()
 
+    # Проверка существования файлов
+    if not os.path.exists(IMAGE_PATH):
+        print(f"Ошибка: файл фона {IMAGE_PATH} не найден")
+        return
+    if not os.path.exists(FONT_PATH):
+        print(f"Ошибка: файл шрифта {FONT_PATH} не найден")
+        return
+    if not os.path.exists(DB_PATH):
+        print(f"Ошибка: файл базы данных {DB_PATH} не найден")
+        return
+
     screen = pg.display.set_mode((1920, 1080))
-    bg = pg.image.load("1.png")
+    try:
+        bg = pg.image.load(IMAGE_PATH)
+    except pg.error as e:
+        print(f"Ошибка загрузки изображения: {e}")
+        return
     
-    # Настройка шрифтов
-    font = pg.font.Font('Comic Sans MS.ttf', 40)
-    font_small = pg.font.Font('Comic Sans MS.ttf', 25)
-    
+    try:
+        font = pg.font.Font(FONT_PATH, 40)
+        font_small = pg.font.Font(FONT_PATH, 25)
+    except Exception as e:
+        print(f"Ошибка загрузки шрифта: {e}")
+        return
+
     # Инициализация клавиатуры
     keyboard = PianoKeyboard(
         start_octave=2,
@@ -114,11 +135,15 @@ def run_game(login):
     key_effects = {}
     
     # Загрузка данных игрока
-    connection = sqlite3.connect('kirieshki.db')
-    cursor = connection.cursor()
-    cursor.execute('SELECT in_game_time, Click_score FROM users WHERE login = ?', (login,))
-    time1, key_presses = cursor.fetchone()
-    connection.close()
+    try:
+        connection = sqlite3.connect(DB_PATH)
+        cursor = connection.cursor()
+        cursor.execute('SELECT in_game_time, Click_score FROM users WHERE login = ?', (login,))
+        time1, key_presses = cursor.fetchone()
+        connection.close()
+    except sqlite3.Error as e:
+        print(f"Ошибка базы данных: {e}")
+        return
 
     # Разбивка времени
     seconds = time1 % 60
@@ -247,11 +272,14 @@ def run_game(login):
     # Сохранение результатов
     all_time_in_sec = seconds + minutes * 60 + hours * 60 * 60
 
-    connection = sqlite3.connect('kirieshki.db')
-    cursor = connection.cursor()
-    cursor.execute('UPDATE users SET in_game_time=?, Click_score=? WHERE login=?', 
-                  (all_time_in_sec, key_presses, login))
-    connection.commit()
-    connection.close()
+    try:
+        connection = sqlite3.connect(DB_PATH)
+        cursor = connection.cursor()
+        cursor.execute('UPDATE users SET in_game_time=?, Click_score=? WHERE login=?', 
+                      (all_time_in_sec, key_presses, login))
+        connection.commit()
+        connection.close()
+    except sqlite3.Error as e:
+        print(f"Ошибка сохранения данных: {e}")
 
     pg.quit()

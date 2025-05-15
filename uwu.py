@@ -1,13 +1,19 @@
 import sqlite3
 import matplotlib.pyplot as plt
 import windows
+import os  # Импортируем модуль для работы с путями
+
+# Получаем абсолютный путь к директории скрипта
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Формируем путь к базе данных
+DB_PATH = os.path.join(BASE_DIR, 'kirieshki.db')
 
 username = ''
 first = True
 
-def labels(x,y,add=False):
+def labels(x, y, add=False):
     for i in range(len(x)):
-        plt.text(i+1 if add else i,y[i], y[i], ha = 'center')
+        plt.text(i+1 if add else i, y[i], y[i], ha='center')
 
 def opened(user):
     global username, first
@@ -20,30 +26,30 @@ def opened(user):
         first = False
 
 def rez_test():
-    BD = sqlite3.connect('kirieshki.db')
+    # Используем относительный путь к БД
+    BD = sqlite3.connect(DB_PATH)
     cursor = BD.cursor()
-    cursor.execute('select Click_score, in_game_time from Users where login = ?', (username,))
+    cursor.execute('SELECT Click_score, in_game_time FROM Users WHERE login = ?', (username,))
     Rez = [int(j) for j in cursor.fetchall()[0]]
     BD.close()
     
     plt.clf()
-    points = [1, 2]  # Позиции точек по оси X
-    labels = ['Клики', 'Время']  # Подписи для точек
+    points = [1, 2]
+    labels = ['Клики', 'Время']
     
     plt.stem(points, Rez)
-    plt.xticks(points, labels)  # Устанавливаем подписи по оси X
+    plt.xticks(points, labels)
     
-    # Добавляем значения над точками (если нужно)
     for i, val in enumerate(Rez):
         plt.text(points[i], val, str(val), ha='center', va='bottom')
     
-    plt.xlim(0, 3)  # Немного расширяем границы по X для красоты
+    plt.xlim(0, 3)
     plt.ylim(0, 10000)
     plt.show()
 
-
 def lid_test():
-    BD = sqlite3.connect('kirieshki.db')
+    # Используем относительный путь к БД
+    BD = sqlite3.connect(DB_PATH)
     cursor = BD.cursor()
     
     cursor.execute('SELECT login, Click_score, in_game_time FROM Users')
@@ -56,21 +62,18 @@ def lid_test():
     
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
     
-    # График кликов
     ax1.bar(logins, click_scores)
     ax1.set_title('Рекорды кликов')
     ax1.set_ylabel('Количество кликов')
-    ax1.set_xticks(range(len(logins)))  # Устанавливаем позиции ticks
-    ax1.set_xticklabels(logins, rotation=0, ha='center')  # Горизонтальные подписи
+    ax1.set_xticks(range(len(logins)))
+    ax1.set_xticklabels(logins, rotation=0, ha='center')
     
-    # График времени
     ax2.bar(logins, game_times)
     ax2.set_title('Игровое время')
     ax2.set_ylabel('Время (секунды)')
-    ax2.set_xticks(range(len(logins)))  # Устанавливаем позиции ticks
-    ax2.set_xticklabels(logins, rotation=0, ha='center')  # Горизонтальные подписи
+    ax2.set_xticks(range(len(logins)))
+    ax2.set_xticklabels(logins, rotation=0, ha='center')
     
-    # Автоматически подбираем отступы
     plt.tight_layout()
     plt.show()
 
